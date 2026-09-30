@@ -1,0 +1,40 @@
+buildscript {
+  repositories {
+    mavenCentral()
+  }
+  dependencies {
+    classpath("org.jetbrains.kotlin.plugin.compose:org.jetbrains.kotlin.plugin.compose.gradle.plugin:${kotlinVersion}")
+  }
+}
+
+plugins {
+  id 'com.android.library'
+  id 'expo-module-gradle-plugin'
+}
+apply plugin: 'org.jetbrains.kotlin.plugin.compose'
+
+group = 'expo.modules.liquidglasstabsandroid'
+version = '0.1.0'
+
+android {
+  namespace "expo.modules.liquidglasstabsandroid"
+  defaultConfig {
+    versionCode 1
+    versionName "0.1.0"
+  }
+  buildFeatures {
+    compose true
+  }
+  lintOptions {
+    abortOnError false
+  }
+}
+
+dependencies {
+  implementation 'androidx.compose.foundation:foundation-android:1.10.6'
+  implementation 'androidx.compose.ui:ui-android:1.10.6'
+  implementation 'androidx.compose.material3:material3-android:1.5.0-alpha17'
+  // Liquid Glass: tab icons + lifecycle-aware tilt light
+  implementation 'androidx.compose.material:material-icons-core:1.7.8'
+  implementation 'androidx.lifecycle:lifecycle-runtime-compose:2.8.7'
+}

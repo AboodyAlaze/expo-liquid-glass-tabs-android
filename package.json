@@ -1,0 +1,75 @@
+{
+  "name": "expo-liquid-glass-tabs-android",
+  "version": "0.1.0",
+  "description": "Native Liquid Glass tab bar for Expo Router on Android",
+  "main": "build/index.js",
+  "types": "build/index.d.ts",
+  "scripts": {
+    "build": "node internal/module_scripts/build.js",
+    "clean": "node internal/module_scripts/clean.js",
+    "lint": "eslint src/",
+    "test": "node internal/module_scripts/test.js",
+    "prepare": "node internal/module_scripts/prepare.js",
+    "open:ios": "node internal/module_scripts/open-ios.js",
+    "open:android": "node internal/module_scripts/open-android.js"
+  },
+  "keywords": [
+    "react-native",
+    "expo",
+    "expo-router",
+    "liquid-glass",
+    "glassmorphism",
+    "tab-bar",
+    "tabs",
+    "android",
+    "jetpack-compose"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AboodyAlaze/expo-liquid-glass-tabs-android.git"
+  },
+  "bugs": {
+    "url": "https://github.com/AboodyAlaze/expo-liquid-glass-tabs-android/issues"
+  },
+  "author": "Abdullrahman Alaa <abdullrahmanalaa@gmail.com> (https://github.com/AboodyAlaze)",
+  "license": "MIT",
+  "homepage": "https://github.com/AboodyAlaze/expo-liquid-glass-tabs-android#readme",
+  "dependencies": {},
+  "devDependencies": {
+    "@babel/core": "^7.26.0",
+    "@types/jest": "^29.2.1",
+    "@types/react": "~19.2.2",
+    "babel-preset-expo": "~57.0.13",
+    "eslint": "~9.39.4",
+    "eslint-config-universe": "^15.0.3",
+    "expo": "~57.0.26",
+    "jest": "^29.7.0",
+    "jest-expo": "~57.0.5",
+    "prettier": "^3.0.0",
+    "react-native": "0.86.3",
+    "typescript": "^5.9.2",
+    "react": "19.2.3",
+    "react-native-safe-area-context": "~5.7.0"
+  },
+  "jest": {
+    "preset": "jest-expo",
+    "roots": [
+      "<rootDir>/src"
+    ]
+  },
+  "peerDependencies": {
+    "expo": "*",
+    "react": "*",
+    "react-native": "*",
+    "react-native-safe-area-context": "*"
+  },
+  "files": [
+    "android/build.gradle",
+    "android/src",
+    "build",
+    "src",
+    "expo-module.config.json",
+    "README.md",
+    "LICENSE"
+  ]
+}
