@@ -165,7 +165,9 @@ private fun GlassNode(
     opacity: () -> Float,
     intensity: () -> Float,
 ) {
-    val shader = remember { RuntimeShader(LIQUID_GLASS_AGSL) }
+    // Compiled lazily, the first time this node actually has glass to draw. Before, every
+    // node (8 per screen) compiled the AGSL program on the main thread at first composition.
+    val shaderHolder = remember { arrayOfNulls<RuntimeShader>(1) }
     // Blur effect is immutable → build once and reuse every frame
     val blur = remember(style.blurRadius, density) {
         val px = style.blurRadius * density
@@ -190,6 +192,7 @@ private fun GlassNode(
                     return@graphicsLayer
                 }
                 clip = true
+                val shader = shaderHolder[0] ?: RuntimeShader(LIQUID_GLASS_AGSL).also { shaderHolder[0] = it }
                 alpha = (opacity() * c.members.maxOf { it.opacity }).coerceIn(0f, 1f)
                 shader.applyUniforms(c, style, lightAngle(), density, intensity())
                 val glass = RenderEffect.createRuntimeShaderEffect(shader, "content")

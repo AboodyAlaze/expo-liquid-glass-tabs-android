@@ -4,6 +4,8 @@ import android.content.Context
 import android.graphics.Canvas
 import android.graphics.RenderNode
 import android.os.Build
+import android.os.SystemClock
+import android.util.Log
 import android.view.View
 import android.view.ViewGroup
 import android.view.ViewTreeObserver
@@ -64,17 +66,59 @@ class LiquidTabBarView(context: Context, appContext: AppContext) : ExpoView(cont
 
   private val preDraw = ViewTreeObserver.OnPreDrawListener {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) capture()
-    true
+    true // never cancels a frame
+  }
+
+  // ---- safety for the capture ----
+  private var capturing = false      // no re-entrancy
+  private var failed = false         // after any error we stop capturing for good (glass keeps its tint)
+  private var attachedAt = 0L
+  private var slowFrames = 0
+  private var skip = 0
+
+  /**
+   * Safe wrapper around the backdrop capture:
+   *  - waits a moment after the bar appears, so it never competes with a screen transition
+   *    (e.g. Login → Tabs, when react-native-screens is mid-animation)
+   *  - never runs twice at once, never runs while hidden or not laid out
+   *  - any exception turns the capture off instead of breaking the app
+   *  - if it gets slow on a weak phone, it captures every 3rd frame instead of every frame
+   */
+  @RequiresApi(Build.VERSION_CODES.Q)
+  private fun capture() {
+    if (failed || capturing || !isShown || width == 0 || height == 0) return
+    if (SystemClock.uptimeMillis() - attachedAt < 400) return
+    if (skip > 0) { skip--; return }
+    capturing = true
+    val t0 = System.nanoTime()
+    try {
+      captureUnsafe()
+    } catch (t: Throwable) {
+      failed = true
+      Log.w("LiquidGlassTabs", "Backdrop capture disabled after an error", t)
+    } finally {
+      capturing = false
+    }
+    val ms = (System.nanoTime() - t0) / 1_000_000f
+    if (ms > 6f) { if (++slowFrames >= 3) skip = 2 } else slowFrames = 0
+  }
+
+  private fun isAncestorOfMe(v: View): Boolean {
+    var p = parent
+    while (p != null) { if (p === v) return true; p = p.parent }
+    return false
   }
 
   @RequiresApi(Build.VERSION_CODES.Q)
-  private fun capture() {
+  private fun captureUnsafe() {
     val node = source as RenderNode
     // Find the first ancestor that has something drawn before it (the screens)
     var anchor: View = this
     var parent = anchor.parent as? ViewGroup ?: return
     var index = parent.indexOfChild(anchor)
+    var climbs = 0
     while (index <= 0) {
+      if (++climbs > 4) return // the screens should be right next to the bar; never capture half the app
       anchor = parent
       parent = anchor.parent as? ViewGroup ?: return
       index = parent.indexOfChild(anchor)
@@ -92,6 +136,7 @@ class LiquidTabBarView(context: Context, appContext: AppContext) : ExpoView(cont
       for (i in 0 until index) {
         val child = parent.getChildAt(i)
         if (child.visibility != View.VISIBLE || child.alpha == 0f) continue
+        if (isAncestorOfMe(child)) continue // a view that contains the bar would make a draw loop
         canvas.save()
         canvas.translate(child.left + child.translationX, child.top + child.translationY)
         child.draw(canvas)
@@ -104,28 +149,42 @@ class LiquidTabBarView(context: Context, appContext: AppContext) : ExpoView(cont
 
   /** Called from Compose while recording its backdrop layer. */
   internal fun drawSource(canvas: Canvas) {
+    if (failed) return
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && canvas.isHardwareAccelerated) {
       canvas.drawRenderNode(source as RenderNode)
     }
   }
 
   // ---- Compose content ----
-  private val composeView = ComposeView(context).apply {
-    setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnDetachedFromWindow)
-    setContent { LiquidTabBarContent(this@LiquidTabBarView) }
-  }
+  // IMPORTANT: Compose can only run when the view is attached to a window.
+  // React Native (Fabric) measures views BEFORE attaching them — e.g. when the Tabs screen is
+  // prepared during the Login → Tabs transition. A ComposeView measured in that state throws
+  // "Cannot locate windowRecomposer", which in release builds silently breaks the UI (black screen).
+  // So the ComposeView only exists while we're attached: added after attach, removed on detach.
+  private var composeView: ComposeView? = null
 
-  init {
-    addView(composeView, ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
+  private fun addCompose() {
+    if (composeView != null || !isAttachedToWindow) return
+    val cv = ComposeView(context).apply {
+      setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnDetachedFromWindow)
+      setContent { LiquidTabBarContent(this@LiquidTabBarView) }
+    }
+    composeView = cv
+    addView(cv, ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
   }
 
   override fun onAttachedToWindow() {
     super.onAttachedToWindow()
+    attachedAt = SystemClock.uptimeMillis()
     viewTreeObserver.addOnPreDrawListener(preDraw)
+    // posted: adding a child while the attach is still being dispatched would attach it twice
+    post { addCompose() }
   }
 
   override fun onDetachedFromWindow() {
     viewTreeObserver.removeOnPreDrawListener(preDraw)
+    composeView?.let { removeView(it) }
+    composeView = null
     super.onDetachedFromWindow()
   }
 }
