@@ -1,29 +1,16 @@
-buildscript {
-  repositories {
-    mavenCentral()
-  }
-  dependencies {
-    classpath("org.jetbrains.kotlin.plugin.compose:org.jetbrains.kotlin.plugin.compose.gradle.plugin:${kotlinVersion}")
-  }
-}
-
 plugins {
   id 'com.android.library'
   id 'expo-module-gradle-plugin'
 }
-apply plugin: 'org.jetbrains.kotlin.plugin.compose'
 
 group = 'expo.modules.liquidglasstabsandroid'
-version = '0.1.0'
+version = '1.0.0'
 
 android {
   namespace "expo.modules.liquidglasstabsandroid"
   defaultConfig {
-    versionCode 1
-    versionName "0.1.0"
-  }
-  buildFeatures {
-    compose true
+    versionCode 2
+    versionName "1.0.0"
   }
   lintOptions {
     abortOnError false
@@ -31,10 +18,8 @@ android {
 }
 
 dependencies {
-  implementation 'androidx.compose.foundation:foundation-android:1.10.6'
-  implementation 'androidx.compose.ui:ui-android:1.10.6'
-  implementation 'androidx.compose.material3:material3-android:1.5.0-alpha17'
-  // Liquid Glass: tab icons + lifecycle-aware tilt light
-  implementation 'androidx.compose.material:material-icons-core:1.7.8'
-  implementation 'androidx.lifecycle:lifecycle-runtime-compose:2.8.7'
+  // No Jetpack Compose: the bar is a plain Android View (RenderNode + AGSL).
+  // These two ship with every React Native app already; listed so the module compiles on its own.
+  implementation 'androidx.core:core:1.13.1'                 // PathParser (icons), accessibility compat
+  implementation 'androidx.customview:customview:1.1.0'      // ExploreByTouchHelper (TalkBack tabs)
 }
