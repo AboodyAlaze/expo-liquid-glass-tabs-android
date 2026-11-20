@@ -35,6 +35,14 @@ enum class Quality {
         else -> MEDIUM
       }
 
+      // 8 cores say nothing about the GPU: a certified-fast device stays HIGH, an uncertified one
+      // needs real RAM to keep the full effect (cheap 4-6 GB phones step down to MEDIUM).
+      if (tier == HIGH && Build.VERSION.MEDIA_PERFORMANCE_CLASS < Build.VERSION_CODES.S) {
+        val info = ActivityManager.MemoryInfo()
+        am.getMemoryInfo(info)
+        if (info.totalMem < 6_500_000_000L) tier = MEDIUM
+      }
+
       // Battery saver → step down one level
       val pm = context.getSystemService(Context.POWER_SERVICE) as PowerManager
       if (pm.isPowerSaveMode) tier = if (tier == HIGH) MEDIUM else LOW

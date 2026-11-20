@@ -1,6 +1,6 @@
 {
   "name": "expo-liquid-glass-tabs-android",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Native Liquid Glass tab bar for Expo Router on Android \u2014 Expo SDK 58 ready, no Jetpack Compose",
   "main": "build/index.js",
   "types": "build/index.d.ts",
